@@ -123,9 +123,9 @@ export function useAIMemory() {
         code: code.replace(
           /function (\w+)$$[^)]*$$/g,
           `/**
- * Description of $1 function
- * @param {*} params - Function parameters
- * @returns {*} Return value description
+ * $1 ফাংশনের বর্ণনা
+ * @param {*} params - ফাংশন প্যারামিটার
+ * @returns {*} রিটার্ন ভ্যালুর বর্ণনা
  */
 function $1($&)`,
         ),
@@ -134,9 +134,22 @@ function $1($&)`,
       })
     }
 
+    // Bengali coding patterns
+    if (code.includes("// বাংলা") || code.includes("// bangla")) {
+      newSuggestions.push({
+        id: `suggestion_${Date.now()}_4`,
+        type: "completion",
+        title: "বাংলা কমেন্ট সাপোর্ট",
+        description: "বাংলা কমেন্টের জন্য UTF-8 এনকোডিং নিশ্চিত করুন",
+        code: `// -*- coding: utf-8 -*-\n${code}`,
+        confidence: 0.6,
+        timestamp: Date.now(),
+      })
+    }
+
     if (newSuggestions.length > 0) {
       setSuggestions((prev) => {
-        const updated = [...prev, ...newSuggestions].slice(-10) // Keep last 10 suggestions
+        const updated = [...prev, ...newSuggestions].slice(-10)
         localStorage.setItem(SUGGESTIONS_STORE, JSON.stringify(updated))
         return updated
       })
