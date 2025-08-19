@@ -13,9 +13,11 @@ import { StatusBar } from "@/components/status-bar"
 import { TabBar } from "@/components/tab-bar"
 import { Terminal } from "@/components/terminal"
 import { CommandPalette } from "@/components/command-palette"
+import { AICommandBox } from "@/components/ai-command-box"
 import { ThemeProvider } from "@/components/theme-provider"
 import { type FileItem, useFileSystem } from "@/hooks/use-file-system"
 import { useSecurity } from "@/hooks/use-security"
+import { useAICommandShortcut } from "@/hooks/use-keyboard-shortcuts"
 
 interface Tab {
   id: string
@@ -33,10 +35,13 @@ export default function ZombieCoderEditor() {
   const [currentCode, setCurrentCode] = useState("")
   const [activePanel, setActivePanel] = useState("explorer")
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [isAICommandOpen, setIsAICommandOpen] = useState(false)
   const [isTerminalVisible, setIsTerminalVisible] = useState(false)
   const [isVoiceActive, setIsVoiceActive] = useState(false)
   const [tabs, setTabs] = useState<Tab[]>([])
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 })
+
+  useAICommandShortcut(() => setIsAICommandOpen(true))
 
   const handleNewFile = useCallback(() => {
     console.log("New file")
@@ -46,7 +51,19 @@ export default function ZombieCoderEditor() {
     console.log("Save file")
   }, [])
 
-  // Keyboard shortcuts
+  const handleCodeInsert = useCallback(
+    (code: string) => {
+      if (selectedFile) {
+        const newContent = currentCode + "\n\n" + code
+        setCurrentCode(newContent)
+        updateFileContent(selectedFile.id, newContent)
+
+        setTabs((prevTabs) => prevTabs.map((tab) => (tab.id === selectedFile.id ? { ...tab, isDirty: true } : tab)))
+      }
+    },
+    [selectedFile, currentCode, updateFileContent],
+  )
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -81,7 +98,6 @@ export default function ZombieCoderEditor() {
     setSelectedFile(file)
     setCurrentCode(file.content)
 
-    // Add or activate tab
     setTabs((prevTabs) => {
       const existingTab = prevTabs.find((tab) => tab.id === file.id)
       if (existingTab) {
@@ -109,7 +125,6 @@ export default function ZombieCoderEditor() {
       if (selectedFile) {
         await updateFileContent(selectedFile.id, content)
 
-        // Mark tab as dirty
         setTabs((prevTabs) =>
           prevTabs.map((tab) => (tab.id === selectedFile.id ? { ...tab, isDirty: content !== tab.file.content } : tab)),
         )
@@ -143,7 +158,6 @@ export default function ZombieCoderEditor() {
       setTabs((prevTabs) => {
         const newTabs = prevTabs.filter((tab) => tab.id !== tabId)
 
-        // If closing active tab, activate another one
         const closingTab = prevTabs.find((tab) => tab.id === tabId)
         if (closingTab?.isActive && newTabs.length > 0) {
           newTabs[0].isActive = true
@@ -248,6 +262,13 @@ export default function ZombieCoderEditor() {
 
         {/* Command Palette */}
         <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
+
+        {/* AI Command Box */}
+        <AICommandBox
+          isOpen={isAICommandOpen}
+          onClose={() => setIsAICommandOpen(false)}
+          onCodeInsert={handleCodeInsert}
+        />
       </div>
     </ThemeProvider>
   )
