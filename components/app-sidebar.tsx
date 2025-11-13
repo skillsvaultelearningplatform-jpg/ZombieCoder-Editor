@@ -11,7 +11,11 @@ import {
   Bot,
   TerminalIcon,
   Shield,
+  Activity,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
+import { useState } from "react"
 
 interface AppSidebarProps {
   activePanel: string
@@ -19,6 +23,8 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activePanel, onPanelChange }: AppSidebarProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const sidebarItems = [
     { id: "explorer", icon: Files, label: "Explorer" },
     { id: "search", icon: Search, label: "Search" },
@@ -27,11 +33,28 @@ export function AppSidebar({ activePanel, onPanelChange }: AppSidebarProps) {
     { id: "extensions", icon: Extension, label: "Extensions" },
     { id: "ai", icon: Bot, label: "AI Assistant" },
     { id: "security", icon: Shield, label: "Security Center" },
+    { id: "performance", icon: Activity, label: "Performance Monitor" },
     { id: "terminal", icon: TerminalIcon, label: "Terminal" },
   ]
 
   return (
-    <div className="w-12 bg-sidebar border-r border-sidebar-border flex flex-col">
+    <div
+      className={`${isExpanded ? "w-48" : "w-12"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-200`}
+    >
+      <div className="flex items-center justify-between p-2 border-b border-sidebar-border">
+        {isExpanded && (
+          <span className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wide">ZombieCoder</span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-6 h-6 p-0 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+        >
+          {isExpanded ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </Button>
+      </div>
+
       {/* Main Navigation */}
       <div className="flex-1 py-2">
         {sidebarItems.map((item) => (
@@ -40,14 +63,15 @@ export function AppSidebar({ activePanel, onPanelChange }: AppSidebarProps) {
             variant="ghost"
             size="sm"
             onClick={() => onPanelChange(item.id)}
-            className={`w-10 h-10 p-0 mx-1 mb-1 ${
+            className={`${isExpanded ? "w-full justify-start px-3 h-8 mb-1" : "w-10 h-10 p-0 mx-1 mb-1"} ${
               activePanel === item.id
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground hover:bg-sidebar-accent/50"
             }`}
-            title={item.label}
+            title={!isExpanded ? item.label : undefined}
           >
-            <item.icon className="h-5 w-5" />
+            <item.icon className="h-4 w-4" />
+            {isExpanded && <span className="ml-3 text-sm font-medium">{item.label}</span>}
           </Button>
         ))}
       </div>
@@ -60,14 +84,15 @@ export function AppSidebar({ activePanel, onPanelChange }: AppSidebarProps) {
           variant="ghost"
           size="sm"
           onClick={() => onPanelChange("settings")}
-          className={`w-10 h-10 p-0 mx-1 ${
+          className={`${isExpanded ? "w-full justify-start px-3 h-8" : "w-10 h-10 p-0 mx-1"} ${
             activePanel === "settings"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-sidebar-foreground hover:bg-sidebar-accent/50"
           }`}
-          title="Settings"
+          title={!isExpanded ? "Settings" : undefined}
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-4 w-4" />
+          {isExpanded && <span className="ml-3 text-sm font-medium">Settings</span>}
         </Button>
       </div>
     </div>

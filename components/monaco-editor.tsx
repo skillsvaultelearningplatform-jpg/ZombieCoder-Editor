@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import * as monaco from "monaco-editor"
 import type { FileItem } from "@/hooks/use-file-system"
+import { useCache } from "@/hooks/use-cache"
 
 interface MonacoEditorProps {
   file?: FileItem | null
@@ -13,11 +14,49 @@ export function MonacoEditor({ file, onContentChange }: MonacoEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const contentCache = useCache<string>(600000) // 10 minutes cache
+  const modelCache = useRef<Map<string, monaco.editor.ITextModel>>(new Map())
+
+  const getOrCreateModel = useCallback(
+    (fileId: string, content: string, language: string) => {
+      let model = modelCache.current.get(fileId)
+
+      if (!model) {
+        model = monaco.editor.createModel(content, language)
+        modelCache.current.set(fileId, model)
+
+        // Cache the content
+        contentCache.set(`content_${fileId}`, content)
+      } else {
+        // Update model content if different
+        if (model.getValue() !== content) {
+          model.setValue(content)
+          contentCache.set(`content_${fileId}`, content)
+        }
+      }
+
+      return model
+    },
+    [contentCache],
+  )
+
+  const debouncedContentChange = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout
+      return (content: string) => {
+        clearTimeout(timeoutId)
+        timeoutId = setTimeout(() => {
+          onContentChange?.(content)
+        }, 300) // 300ms debounce
+      }
+    })(),
+    [onContentChange],
+  )
 
   useEffect(() => {
     if (!editorRef.current) return
 
-    // Configure Monaco Editor
+    // Configure Monaco Editor with performance optimizations
     monaco.editor.defineTheme("zombiecoder-dark", {
       base: "vs-dark",
       inherit: true,
@@ -62,7 +101,7 @@ const languages = {
 
 helloZombieCoder();`
 
-    // Create editor instance
+    // Create editor instance with performance optimizations
     const editor = monaco.editor.create(editorRef.current, {
       value: initialContent,
       language: file?.language || "javascript",
@@ -72,7 +111,7 @@ helloZombieCoder();`
       lineNumbers: "on",
       roundedSelection: false,
       scrollBeyondLastLine: false,
-      minimap: { enabled: true },
+      minimap: { enabled: true, maxColumn: 120 }, // Limited minimap for performance
       automaticLayout: true,
       wordWrap: "on",
       bracketPairColorization: { enabled: true },
@@ -85,12 +124,19 @@ helloZombieCoder();`
         showSnippets: true,
         showFunctions: true,
         showVariables: true,
+        filterGraceful: true, // Added graceful filtering
       },
       quickSuggestions: {
         other: true,
         comments: true,
         strings: true,
       },
+      renderLineHighlight: "line",
+      renderWhitespace: "selection",
+      smoothScrolling: true,
+      cursorSmoothCaretAnimation: "on",
+      mouseWheelScrollSensitivity: 1,
+      fastScrollSensitivity: 5,
     })
 
     monacoRef.current = editor
@@ -98,43 +144,47 @@ helloZombieCoder();`
 
     const disposable = editor.onDidChangeModelContent(() => {
       const content = editor.getValue()
-      onContentChange?.(content)
+      debouncedContentChange(content)
     })
 
     // Add keyboard shortcuts
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       console.log("Save triggered")
-      // File saving is now handled by parent component
     })
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyO, () => {
       console.log("Open triggered")
-      // File opening is now handled by parent component
     })
 
-    // Cleanup
     return () => {
       disposable.dispose()
       editor.dispose()
+
+      // Clean up cached models periodically
+      if (modelCache.current.size > 10) {
+        const modelsToDelete = Array.from(modelCache.current.keys()).slice(0, 5)
+        modelsToDelete.forEach((key) => {
+          const model = modelCache.current.get(key)
+          if (model) {
+            model.dispose()
+            modelCache.current.delete(key)
+          }
+        })
+      }
     }
-  }, [])
+  }, [debouncedContentChange])
 
   useEffect(() => {
     if (monacoRef.current && file) {
       const editor = monacoRef.current
-      const currentContent = editor.getValue()
 
-      if (currentContent !== file.content) {
-        editor.setValue(file.content)
-      }
+      const cachedContent = contentCache.get(`content_${file.id}`)
+      const contentToUse = cachedContent || file.content
 
-      // Update language
-      const model = editor.getModel()
-      if (model && file.language) {
-        monaco.editor.setModelLanguage(model, file.language)
-      }
+      const model = getOrCreateModel(file.id, contentToUse, file.language || "javascript")
+      editor.setModel(model)
     }
-  }, [file])
+  }, [file, contentCache, getOrCreateModel])
 
   if (isLoading) {
     return (

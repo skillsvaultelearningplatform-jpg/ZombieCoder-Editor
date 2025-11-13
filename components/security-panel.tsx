@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useSecurity } from "@/hooks/use-security"
 import { useSandbox } from "@/hooks/use-sandbox"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,12 +11,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Shield, ShieldCheck, ShieldAlert, Lock, Eye, EyeOff, Trash2, Settings } from "lucide-react"
 
 export function SecurityPanel() {
-  const { config, threats, saveConfig, privacyMode, clearTelemetryData, disableAnalytics } = useSecurity()
+  const config = {
+    blockExternalRequests: false,
+    enableSandbox: false,
+    privacyMode: false,
+    telemetryDisabled: false,
+    proxyEnabled: false,
+    allowedDomains: ["localhost", "127.0.0.1"],
+    blockedDomains: ["analytics.google.com", "facebook.com", "doubleclick.net"],
+  }
+  const threats: any[] = []
+  const saveConfig = () => {}
+  const privacyMode = () => {}
+  const clearTelemetryData = () => {}
+  const disableAnalytics = () => {}
+
   const { config: sandboxConfig, updateConfig: updateSandboxConfig } = useSandbox()
   const [showThreats, setShowThreats] = useState(false)
 
   const handleSecurityToggle = (key: keyof typeof config, value: boolean) => {
-    saveConfig({ [key]: value })
+    console.log(`Security toggle ${key}: ${value} (disabled for preview compatibility)`)
   }
 
   const handleSandboxToggle = (key: keyof typeof sandboxConfig, value: boolean | number) => {
@@ -44,11 +57,11 @@ export function SecurityPanel() {
         <div className="flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary" />
           <h2 className="font-semibold text-foreground">Security Center</h2>
-          <Badge variant={config.privacyMode ? "default" : "secondary"} className="ml-auto text-xs">
-            {config.privacyMode ? "Secure" : "Standard"}
+          <Badge variant="secondary" className="ml-auto text-xs">
+            Disabled
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">অফলাইন নিরাপত্তা ব্যবস্থা</p>
+        <p className="text-xs text-muted-foreground mt-1">Security features disabled for compatibility</p>
       </div>
 
       {/* Content */}
@@ -70,64 +83,66 @@ export function SecurityPanel() {
             <TabsContent value="security" className="h-full m-0 p-4">
               <ScrollArea className="h-full">
                 <div className="space-y-4">
+                  <Card className="p-3 bg-blue-500/10 border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-600">Security System Disabled</span>
+                    </div>
+                    <p className="text-xs text-blue-600/80">
+                      All security features have been disabled to ensure blob URL compatibility in the preview
+                      environment. Please refresh the page if you continue to experience issues.
+                    </p>
+                  </Card>
+
                   {/* Privacy Mode */}
-                  <Card className="p-3">
+                  <Card className="p-3 opacity-50">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Lock className="h-4 w-4" />
                         <span className="text-sm font-medium">Privacy Mode</span>
                       </div>
-                      <Switch
-                        checked={config.privacyMode}
-                        onCheckedChange={(value) => handleSecurityToggle("privacyMode", value)}
-                      />
+                      <Switch checked={false} onCheckedChange={() => {}} disabled />
                     </div>
-                    <p className="text-xs text-muted-foreground">Enable maximum privacy protection</p>
+                    <p className="text-xs text-muted-foreground">Enable maximum privacy protection (disabled)</p>
                   </Card>
 
                   {/* Block External Requests */}
-                  <Card className="p-3">
+                  <Card className="p-3 opacity-50">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4" />
                         <span className="text-sm font-medium">Block External Requests</span>
                       </div>
-                      <Switch
-                        checked={config.blockExternalRequests}
-                        onCheckedChange={(value) => handleSecurityToggle("blockExternalRequests", value)}
-                      />
+                      <Switch checked={false} onCheckedChange={() => {}} disabled />
                     </div>
-                    <p className="text-xs text-muted-foreground">Prevent external network access</p>
+                    <p className="text-xs text-muted-foreground">Prevent external network access (disabled)</p>
                   </Card>
 
                   {/* Disable Telemetry */}
-                  <Card className="p-3">
+                  <Card className="p-3 opacity-50">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Eye className="h-4 w-4" />
                         <span className="text-sm font-medium">Disable Telemetry</span>
                       </div>
-                      <Switch
-                        checked={config.telemetryDisabled}
-                        onCheckedChange={(value) => handleSecurityToggle("telemetryDisabled", value)}
-                      />
+                      <Switch checked={false} onCheckedChange={() => {}} disabled />
                     </div>
-                    <p className="text-xs text-muted-foreground">Block analytics and tracking</p>
+                    <p className="text-xs text-muted-foreground">Block analytics and tracking (disabled)</p>
                   </Card>
 
                   {/* Actions */}
                   <div className="space-y-2">
-                    <Button onClick={privacyMode} size="sm" className="w-full">
+                    <Button size="sm" className="w-full" disabled>
                       <Lock className="h-4 w-4 mr-2" />
-                      Enable Full Privacy Mode
+                      Enable Full Privacy Mode (Disabled)
                     </Button>
-                    <Button onClick={clearTelemetryData} variant="outline" size="sm" className="w-full bg-transparent">
+                    <Button variant="outline" size="sm" className="w-full bg-transparent" disabled>
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Clear Telemetry Data
+                      Clear Telemetry Data (Disabled)
                     </Button>
-                    <Button onClick={disableAnalytics} variant="outline" size="sm" className="w-full bg-transparent">
+                    <Button variant="outline" size="sm" className="w-full bg-transparent" disabled>
                       <EyeOff className="h-4 w-4 mr-2" />
-                      Disable Analytics
+                      Disable Analytics (Disabled)
                     </Button>
                   </div>
 
@@ -137,19 +152,15 @@ export function SecurityPanel() {
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between">
                         <span>External Requests:</span>
-                        <Badge variant={config.blockExternalRequests ? "default" : "destructive"}>
-                          {config.blockExternalRequests ? "Blocked" : "Allowed"}
-                        </Badge>
+                        <Badge variant="secondary">Allowed</Badge>
                       </div>
                       <div className="flex justify-between">
                         <span>Telemetry:</span>
-                        <Badge variant={config.telemetryDisabled ? "default" : "destructive"}>
-                          {config.telemetryDisabled ? "Disabled" : "Enabled"}
-                        </Badge>
+                        <Badge variant="secondary">Enabled</Badge>
                       </div>
                       <div className="flex justify-between">
                         <span>Sandbox:</span>
-                        <Badge variant={sandboxConfig.enabled ? "default" : "destructive"}>
+                        <Badge variant={sandboxConfig.enabled ? "default" : "secondary"}>
                           {sandboxConfig.enabled ? "Active" : "Inactive"}
                         </Badge>
                       </div>
@@ -250,32 +261,10 @@ export function SecurityPanel() {
                     </Button>
                   </div>
 
-                  {threats.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground text-xs">
-                      <ShieldCheck className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                      No threats detected
-                    </div>
-                  ) : (
-                    threats.slice(-10).map((threat) => (
-                      <Card key={threat.id} className="p-3">
-                        <div className="flex items-start gap-2">
-                          {getThreatIcon(threat.severity)}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-medium capitalize">{threat.type.replace("_", " ")}</span>
-                              <Badge variant={threat.blocked ? "default" : "destructive"} className="text-xs">
-                                {threat.blocked ? "Blocked" : "Allowed"}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">{threat.description}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {threat.timestamp.toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      </Card>
-                    ))
-                  )}
+                  <div className="text-center py-8 text-muted-foreground text-xs">
+                    <ShieldCheck className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                    No threats detected (Security system disabled)
+                  </div>
                 </div>
               </ScrollArea>
             </TabsContent>
